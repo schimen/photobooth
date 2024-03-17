@@ -13,14 +13,18 @@ I use a Canon dslr that I can connect to a Raspberry Pi via Python bindings for 
 
 ### Requirements
 
+**Python**
+- [pillow](https://pypi.org/project/pillow/)
+- [gphoto2](https://pypi.org/project/gphoto2/)
+
 **Hardware**
 - A camera
 (prefereably with flash and on wall power)
 - A computer
 (preferably a small Linux computer like a Raspberr Pi)
-- A keyboard or button that can tell the computer when to take an image
+- A keyboard or button and that can tell the computer when to take an image
+- A screen or led that indicates when images will be taken
 - A printer that the computer can control
 
-**Python**
-- [pillow](https://pypi.org/project/pillow/)
-- [gphoto2](https://pypi.org/project/gphoto2/)
+**Here is an image of the button and led connected to the raspberry pi**
+![raspberry pi connection diagram](./example_images/schematic.png)
