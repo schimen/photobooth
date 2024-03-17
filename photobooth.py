@@ -1,18 +1,22 @@
 import gphoto2 as gp
 import os
 from PIL import Image
-from time import sleep
+from time import sleep, time
+import threading
 from datetime import datetime
-import logging
-
-logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
-log = logging.getLogger('photobooth')
+import logging as log
 
 
-def capture_images(n_images=4, wait_time=0, outdir='output') -> list:
+def capture_images(n_images=4,
+                   wait_time=0,
+                   outdir='output',
+                   countdown_handler=None) -> list:
     """
     Capture and download images with a camera and return the paths of each 
-    image in a list
+    image in a list.
+    Use `countdown_handler` to specify a handler function called when sleeping 
+    before image capture. The `wait_time` argument will be added as an
+    argument to `countdown_handler`.
     """
     # Connect to camera
     try:
@@ -28,6 +32,10 @@ def capture_images(n_images=4, wait_time=0, outdir='output') -> list:
         # Sleep if specified
         if wait_time > 0:
             log.debug('Waiting %d s before capture', wait_time)
+            # Start countdown handler in thread
+            if callable(countdown_handler):
+                threading.Thread(target=countdown_handler,
+                                 args=(wait_time, )).start()
             sleep(wait_time)
 
         log.debug('Capturing image %d of %d', i + 1, n_images)
@@ -110,7 +118,9 @@ def create_image_montage(paths: list,
     return base_image
 
 
-def create_image(outdir='output', background=None) -> str:
+def create_image(outdir='output',
+                 background=None,
+                 countdown_handler=None) -> str:
     """
     Take photos with `capture_images` command and put them in a montage image.
     Returns the path of the montage image.
@@ -120,7 +130,9 @@ def create_image(outdir='output', background=None) -> str:
         os.mkdir(outdir)
 
     # Capture the images
-    image_paths = capture_images(wait_time=2, outdir=outdir)
+    image_paths = capture_images(wait_time=2,
+                                 outdir=outdir,
+                                 countdown_handler=countdown_handler)
     if len(image_paths) < 1:
         log.error('Got no image paths when capturing images')
         return
@@ -136,7 +148,12 @@ def create_image(outdir='output', background=None) -> str:
     log.info('Saved image montage in %s', result_image_path)
 
 
-if __name__ == '__main__':
+def main():
     prompt = 'Press enter to capture photos. Type q and enter to quit\n> '
     while 'q' not in input(prompt).lower():
         create_image()
+
+
+if __name__ == '__main__':
+    log.basicConfig(format='%(levelname)s: %(message)s', level=log.INFO)
+    main()
