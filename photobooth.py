@@ -5,12 +5,13 @@ from time import sleep, time
 import threading
 from datetime import datetime
 import logging as log
+from typing import Callable, List, Tuple
 
 
-def capture_images(n_images=4,
-                   wait_time=0,
-                   outdir='output',
-                   countdown_handler=None) -> list:
+def capture_images(n_images: int = 4,
+                   wait_time: int = 0,
+                   outdir: str = 'output',
+                   countdown_handler: Callable[[int], None] = None) -> List[str]:
     """
     Capture and download images with a camera and return the paths of each 
     image in a list.
@@ -55,11 +56,13 @@ def capture_images(n_images=4,
     return image_paths
 
 
-def create_image_montage(paths: list,
-                         dimensions=(1360, 920),
-                         background=None) -> Image:
+def create_image_montage(paths: List[str],
+                         dimensions: Tuple[int, int] = (1360, 920),
+                         background: str = None) -> Image:
     """
-    Take a list of image paths and put them together in a montage
+    Take a list of image paths and put them together in a montage.
+    Use `background` to set background image, or use `dimensions` to use a 
+    white background image of the dimensions.
     """
     # Create base image
     if background is None:
@@ -118,9 +121,9 @@ def create_image_montage(paths: list,
     return base_image
 
 
-def create_image(outdir='output',
-                 background=None,
-                 countdown_handler=None) -> str:
+def create_image(outdir: str = 'output',
+                 background: str = None,
+                 countdown_handler: Callable[[int], None] = None) -> str:
     """
     Take photos with `capture_images` command and put them in a montage image.
     Returns the path of the montage image.
