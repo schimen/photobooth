@@ -36,8 +36,8 @@ def capture_images(n_images=4, wait_time=0, outdir='output') -> list:
                                       gp.GP_FILE_TYPE_NORMAL)
 
         # Save file
-        filename = f'capture-{i}_' + datetime.now().strftime(
-            r'%y-%m-%d_%H-%M-%S') + '.jpg'
+        filename = datetime.now().strftime(
+            r'%y-%m-%d_%H-%M-%S') + f'_capture-{i}.jpg'
         path = os.path.join(outdir, filename)
         camera_file.save(path)
         image_paths.append(path)
@@ -110,7 +110,7 @@ def create_image_montage(paths: list,
     return base_image
 
 
-def create_image(outdir='output') -> str:
+def create_image(outdir='output', background=None) -> str:
     """
     Take photos with `capture_images` command and put them in a montage image.
     Returns the path of the montage image.
@@ -126,13 +126,11 @@ def create_image(outdir='output') -> str:
         return
 
     # Create an image with the capture images gathered and save it
-    image = create_image_montage(image_paths,
-                                 background='montage_background.jpg')
+    image = create_image_montage(image_paths, background=background)
     if image is None:
         log.error('Could not create montage image')
         return
-    filename = 'montage_' + datetime.now().strftime(
-        r'%y-%m-%d_%H-%M-%S') + '.jpg'
+    filename = datetime.now().strftime(r'%y-%m-%d_%H-%M-%S') + '_montage.jpg'
     result_image_path = os.path.join(outdir, filename)
     image.save(result_image_path)
     log.info('Saved image montage in %s', result_image_path)
