@@ -2,14 +2,14 @@
 
 This is a photobooth project for my birthday celebration.
 The concept of the project is a dslr camera connected to a respberry pi which captures four images with it and put them together in a single image. The image is then Sent to a small photo printer that prints the image.
-Here is an illustration of the concept:
+**Here is an illustration of the concept**
 ![illustration of concept](./example_images/concept_illustration.png)
-Here is an example of a possible resulting image:
+**Here is an example of a possible resulting image**
 ![result example](./example_images/montage_example.jpg)
 
 ### Technical details
 
-I use a Canon dslr that I can connect to a Raspberry Pi via Python bindings for [gphoto2](http://gphoto.org/). The Python program running on the Raspberry Pi is [photobooth.py](./photobooth.py). The rasbperry pi will connect to a photo printer that prints the montage image when it is finished.
+I use a Canon dslr that I can connect to a Raspberry Pi via Python bindings for [gphoto2](http://gphoto.org/). The Python program running on the Raspberry Pi is [raspi_photobooth.py](./raspi_photobooth.py), which relies on [photobooth.py](./photobooth.py). The rasbperry pi will connect to a photo printer that prints the montage image when it is finished.
 
 ### Requirements
 
@@ -26,5 +26,5 @@ I use a Canon dslr that I can connect to a Raspberry Pi via Python bindings for 
 - A screen or led that indicates when images will be taken
 - A printer that the computer can control
 
-**Here is an image of the button and led connected to the raspberry pi**
+**Here is a schematic of the button and led connected to the raspberry pi**
 ![raspberry pi connection diagram](./example_images/schematic.png)
