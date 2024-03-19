@@ -1,22 +1,29 @@
-import RPi.GPIO as GPIO
+"""
+This python script is intended to run on a raspberry pi with a button, led 
+and camera connected. The camera should be compatible with gphoto2.
+This script waits for a button press and starts the `create_image` function 
+from the photooth.py file when a button press is registered.
+"""
+
 from time import sleep, time
-from photobooth import create_image
 import threading
 import logging as log
 import atexit
+from RPi import GPIO
+from photobooth import create_image
 
 photobooth_mutex = threading.Lock()
-button = 23
-led = 24
+BUTTON = 23
+LED = 24
 
 
 def blink(period: int) -> None:
     """
     Blink led for a total period of time specified in `period` argument
     """
-    GPIO.output(led, GPIO.HIGH)
+    GPIO.output(LED, GPIO.HIGH)
     sleep(period / 2)
-    GPIO.output(led, GPIO.LOW)
+    GPIO.output(LED, GPIO.LOW)
     sleep(period / 2)
 
 
@@ -44,9 +51,11 @@ def run_photobox(mutex: threading.Lock) -> None:
     Run `create_image` function and release mutex after it is finished
     """
     log.debug('Creating photobox image')
-    blink(1)
-    create_image(countdown_handler=countdown_handler)
-    mutex.release()
+    try:
+        blink(1)
+        create_image(countdown_handler=countdown_handler)
+    finally:
+        mutex.release()
 
 
 def button_handler(_):
@@ -66,9 +75,9 @@ def button_handler(_):
 def main():
     # Setup gpio
     GPIO.setmode(GPIO.BCM)
-    GPIO.setup(button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.setup(led, GPIO.OUT, initial=GPIO.LOW)
-    GPIO.add_event_detect(button, GPIO.FALLING, callback=button_handler)
+    GPIO.setup(BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(LED, GPIO.OUT, initial=GPIO.LOW)
+    GPIO.add_event_detect(BUTTON, GPIO.FALLING, callback=button_handler)
     atexit.register(GPIO.cleanup)
 
     # Blink when starting program

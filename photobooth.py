@@ -1,17 +1,27 @@
-import gphoto2 as gp
+"""
+This python file provides functionality to capture images via the `gphoto2` 
+library and paste them together in another image using the `pillow` library.
+The relevant functions are:
+- `capture_images`
+- `create_montage`
+- `create_image`
+"""
+
 import os
-from PIL import Image
-from time import sleep, time
+from time import sleep
 import threading
 from datetime import datetime
 import logging as log
 from typing import Callable, List, Tuple
+from PIL import Image
+import gphoto2 as gp
 
 
-def capture_images(n_images: int = 4,
-                   wait_time: int = 0,
-                   outdir: str = 'output',
-                   countdown_handler: Callable[[int], None] = None) -> List[str]:
+def capture_images(
+        n_images: int = 4,
+        wait_time: int = 0,
+        outdir: str = 'output',
+        countdown_handler: Callable[[int], None] = None) -> List[str]:
     """
     Capture and download images with a camera and return the paths of each 
     image in a list.
@@ -23,8 +33,8 @@ def capture_images(n_images: int = 4,
     try:
         camera = gp.Camera()
         camera.init()
-    except gp.GPhoto2Error as e:
-        log.error('%s, please connect a compatible camera', e)
+    except gp.GPhoto2Error as err:
+        log.error('%s, please connect a compatible camera', err)
         return []
 
     # Capture n images
@@ -56,11 +66,54 @@ def capture_images(n_images: int = 4,
     return image_paths
 
 
-def create_image_montage(paths: List[str],
-                         dimensions: Tuple[int, int] = (1360, 920),
-                         background: str = None) -> Image:
+def paste_images(base_image: Image, paths: List[str],
+                 shape: Tuple[int, int]) -> Image:
     """
-    Take a list of image paths and put them together in a montage.
+    Calculate position and size for each image in paths and paste it on base_image
+    """
+    # Rotate if there are more columns than rows
+    rows, cols = shape
+    if cols > rows:
+        base_image = base_image.rotate(90, expand=True)
+
+    # Calculate width, height, aspect ratio and border offset
+    width, height = base_image.size
+    offset = int(width / 100)
+    max_img_w = int((width - (rows + 1) * offset) / rows)
+    max_img_h = int((height - (cols + 1) * offset) / cols)
+    aspect_ratio = width / height
+
+    # Go through all image files
+    for i, path in enumerate(paths):
+        # Read image and put it on base image
+        with Image.open(path) as img:
+            # Resize with correct aspect ratio
+            img_w, img_h = img.size
+            img_ar = img_w / img_h
+            if img_ar > aspect_ratio:
+                new_size = (max_img_w, int(max_img_w / img_ar))
+            else:
+                new_size = (int(max_img_h * img_ar), max_img_h)
+
+            img = img.resize(new_size)
+
+            # Calculate x and y offset values
+            img_w, img_h = img.size
+
+            # Paste image onto base image
+            pos_x = offset + (i % rows) * (max_img_w + offset)
+            pos_y = offset + (i // rows) * (max_img_h + offset)
+            base_image.paste(img, (pos_x, pos_y))
+
+    return base_image
+
+
+def create_montage(paths: List[str],
+                   dimensions: Tuple[int, int] = (1360, 920),
+                   background: str = None) -> Image:
+    """
+    Take a list of image paths and put them together in a montage with 
+    the `paste_images` function.
     Use `background` to set background image, or use `dimensions` to use a 
     white background image of the dimensions.
     """
@@ -77,48 +130,12 @@ def create_image_montage(paths: List[str],
         4: (2, 2),
         9: (3, 3),
     }
-    if n_images not in n_image_layout.keys():
+    if n_images not in n_image_layout:
         log.error('Got %d images, but only %s amount of images are supported.',
                   n_images, str(n_image_layout.keys()))
         return None
 
-    # Rotate if there are more columns than rows
-    rows, cols = n_image_layout[n_images]
-    if cols > rows:
-        base_image = base_image.rotate(90, expand=True)
-
-    # Calculate width, height, aspect ratio and border offset
-    w, h = base_image.size
-    offset = int(w / 100)
-    max_img_w = int((w - (rows + 1) * offset) / rows)
-    max_img_h = int((h - (cols + 1) * offset) / cols)
-    ar = w / h
-
-    # Go through all image files
-    for i, path in enumerate(paths):
-        # Read image and put it on base image
-        with Image.open(path) as img:
-            # Resize with correct aspect ratio
-            img_w, img_h = img.size
-            img_ar = img_w / img_h
-            if img_ar > ar:
-                new_size = (max_img_w, int(max_img_w / img_ar))
-            else:
-                new_size = (int(max_img_h * img_ar), max_img_h)
-
-            img = img.resize(new_size)
-
-            # Calculate x and y offset values
-            img_w, img_h = img.size
-            offset_x = int(img_w * offset / max_img_w)
-            offset_y = int(img_h * offset / max_img_h)
-
-            # Paste image onto base image
-            pos_x = offset + (i % rows) * (max_img_w + offset_x)
-            pos_y = offset + (i // rows) * (max_img_h + offset_y)
-            base_image.paste(img, (pos_x, pos_y))
-
-    return base_image
+    return paste_images(base_image, paths, n_image_layout[n_images])
 
 
 def create_image(outdir: str = 'output',
@@ -141,7 +158,7 @@ def create_image(outdir: str = 'output',
         return
 
     # Create an image with the capture images gathered and save it
-    image = create_image_montage(image_paths, background=background)
+    image = create_montage(image_paths, background=background)
     if image is None:
         log.error('Could not create montage image')
         return
