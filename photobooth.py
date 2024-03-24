@@ -17,7 +17,22 @@ from PIL import Image
 import gphoto2 as gp
 
 
+def open_camera() -> gp.Camera | None:
+    """
+    Connect to a camera via gphoto2 and return the Camera object.
+    Return None of no camera was available.
+    """
+    try:
+        camera = gp.Camera()
+        camera.init()
+        return camera
+    except gp.GPhoto2Error as err:
+        log.error('%s, please connect a compatible camera', err)
+        return None
+
+
 def capture_images(
+        camera: gp.Camera,
         n_images: int = 4,
         wait_time: int = 0,
         outdir: str = 'output',
@@ -29,14 +44,6 @@ def capture_images(
     before image capture. The `wait_time` argument will be added as an
     argument to `countdown_handler`.
     """
-    # Connect to camera
-    try:
-        camera = gp.Camera()
-        camera.init()
-    except gp.GPhoto2Error as err:
-        log.error('%s, please connect a compatible camera', err)
-        return []
-
     # Capture n images
     image_paths = []
     for i in range(n_images):
@@ -50,9 +57,21 @@ def capture_images(
             sleep(wait_time)
 
         log.debug('Capturing image %d of %d', i + 1, n_images)
-        file_path = camera.capture(gp.GP_CAPTURE_IMAGE)
-        camera_file = camera.file_get(file_path.folder, file_path.name,
-                                      gp.GP_FILE_TYPE_NORMAL)
+        # Capture image
+        try:
+            file_path = camera.capture(gp.GP_CAPTURE_IMAGE)
+        except gp.GPhoto2Error as e:
+            log.error('Could not capture image, %s', e)
+            continue
+
+        # Get image from camera
+        try:
+            camera_file = camera.file_get(file_path.folder, file_path.name,
+                                          gp.GP_FILE_TYPE_NORMAL)
+        except gp.GPhoto2Error as e:
+            log.error('%s, could not get file %s in %s from camera', e,
+                      file_path.name, file_path.folder)
+            continue
 
         # Save file
         filename = datetime.now().strftime(
@@ -109,7 +128,7 @@ def paste_images(base_image: Image, paths: List[str],
 
 
 def create_montage(paths: List[str],
-                   dimensions: Tuple[int, int] = (1360, 920),
+                   dimensions: Tuple[int, int] = (1500, 1000),
                    background: str = None) -> Image:
     """
     Take a list of image paths and put them together in a montage with 
@@ -138,9 +157,12 @@ def create_montage(paths: List[str],
     return paste_images(base_image, paths, n_image_layout[n_images])
 
 
-def create_image(outdir: str = 'output',
-                 background: str = None,
-                 countdown_handler: Callable[[int], None] = None) -> str:
+def create_image(
+    outdir: str = 'output',
+    background: str = None,
+    dimensions: Tuple[int, int] = (1500, 1000),
+    countdown_handler: Callable[[int], None] = None,
+) -> str:
     """
     Take photos with `capture_images` command and put them in a montage image.
     Returns the path of the montage image.
@@ -149,8 +171,15 @@ def create_image(outdir: str = 'output',
     if not os.path.isdir(outdir):
         os.mkdir(outdir)
 
+    # Open camera
+    camera = open_camera()
+    if camera is None:
+        log.error('No camera available')
+        return
+
     # Capture the images
-    image_paths = capture_images(wait_time=2,
+    image_paths = capture_images(camera,
+                                 wait_time=2,
                                  outdir=outdir,
                                  countdown_handler=countdown_handler)
     if len(image_paths) < 1:
@@ -158,7 +187,9 @@ def create_image(outdir: str = 'output',
         return
 
     # Create an image with the capture images gathered and save it
-    image = create_montage(image_paths, background=background)
+    image = create_montage(image_paths,
+                           background=background,
+                           dimensions=dimensions)
     if image is None:
         log.error('Could not create montage image')
         return

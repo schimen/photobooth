@@ -9,12 +9,33 @@ from time import sleep, time
 import threading
 import logging as log
 import atexit
+import subprocess
 from RPi import GPIO
 from photobooth import create_image
 
 photobooth_mutex = threading.Lock()
 BUTTON = 23
 LED = 24
+PRINTER_MAC = '01:23:45:67:89:AB'
+PRINTER_RES = (int(3.4 * 800), int(2.3 * 800))
+
+import logging as log
+import subprocess
+
+
+def print_image(path: str, addr: str) -> None:
+    """
+    Send image to bluetooth printer via `obexftp`.
+    `path` is path to image that will be printed.
+    `addr` is mac address to bluetooth printer. 
+    """
+    command = [
+        'obexftp', '-S', '-H', '-U none', '-B 4', '-b', addr, '-p', path
+    ]
+    try:
+        subprocess.run(command, check=True, shell=True)
+    except subprocess.CalledProcessError as err:
+        log.error('Could not print: %s', err)
 
 
 def blink(period: int) -> None:
@@ -53,7 +74,11 @@ def run_photobox(mutex: threading.Lock) -> None:
     log.debug('Creating photobox image')
     try:
         blink(1)
-        create_image(countdown_handler=countdown_handler)
+        path = create_image(countdown_handler=countdown_handler,
+                            dimensions=PRINTER_RES)
+        print_image(path, PRINTER_MAC)
+        blink(0.1)
+        blink(0.1)
     finally:
         mutex.release()
 
@@ -77,7 +102,10 @@ def main():
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.setup(LED, GPIO.OUT, initial=GPIO.LOW)
-    GPIO.add_event_detect(BUTTON, GPIO.FALLING, callback=button_handler)
+    GPIO.add_event_detect(BUTTON,
+                          GPIO.FALLING,
+                          callback=button_handler,
+                          bouncetime=100)
     atexit.register(GPIO.cleanup)
 
     # Blink when starting program

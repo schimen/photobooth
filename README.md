@@ -9,13 +9,16 @@ The concept of the project is a dslr camera connected to a respberry pi which ca
 
 ### Technical details
 
-I use a Canon dslr that I can connect to a Raspberry Pi via Python bindings for [gphoto2](http://gphoto.org/). The Python program running on the Raspberry Pi is [raspi_photobooth.py](./raspi_photobooth.py), which relies on [photobooth.py](./photobooth.py). The rasbperry pi will connect to a photo printer that prints the montage image when it is finished.
+I use a Canon dslr that I can connect to a Raspberry Pi via Python bindings for [gphoto2](http://gphoto.org/). The Python program running on the Raspberry Pi is [raspi_photobooth.py](./raspi_photobooth.py), which relies on [photobooth.py](./photobooth.py). The rasbperry pi connects to a [HP sprocket plus](https://www.hp.com/us-en/shop/pdp/hp-sprocket-plus-printer-p-2fr86a-b1h-1) mini printer over bluetooth. Images are transferred to the printer using [obexftp](http://dev.zuckschwerdt.org/openobex/wiki/ObexFtp), as described in [this blog](https://anotherpiblog.blogspot.com/2017/06/raspberry-pi-photobooth-with-bluetooth.html).
 
 ### Requirements
 
 **Python**
 - [pillow](https://pypi.org/project/pillow/)
 - [gphoto2](https://pypi.org/project/gphoto2/)
+
+**Software**
+- [obexftp](http://dev.zuckschwerdt.org/openobex/wiki/ObexFtp)
 
 **Hardware**
 - A camera
