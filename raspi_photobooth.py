@@ -29,13 +29,9 @@ def print_image(path: str, addr: str) -> None:
     `path` is path to image that will be printed.
     `addr` is mac address to bluetooth printer. 
     """
-    command = [
-        'obexftp', '-S', '-H', '-U none', '-B 4', '-b', addr, '-p', path
-    ]
-    try:
-        subprocess.run(command, check=True, shell=True)
-    except subprocess.CalledProcessError as err:
-        log.error('Could not print: %s', err)
+    command = f'obexftp -S -H -U none -B 4 -b {addr} -p {path}'
+    log.debug('Printing with command: %s', command)
+    subprocess.run(command, shell=True)
 
 
 def blink(period: int) -> None:
@@ -76,6 +72,12 @@ def run_photobox(mutex: threading.Lock) -> None:
         blink(1)
         path = create_image(countdown_handler=countdown_handler,
                             dimensions=PRINTER_RES)
+        if path is not None:
+            log.debug('Printing image')
+            print_image(path, PRINTER_MAC)
+        else:
+            log.warning('Path to print image is None, could not print image')
+
         print_image(path, PRINTER_MAC)
         blink(0.1)
         blink(0.1)
@@ -93,7 +95,7 @@ def button_handler(_):
         threading.Thread(target=run_photobox,
                          args=(photobooth_mutex, )).start()
 
-    else:  # This is my solution to debounce :)
+    else:  # Don't start a new thread if the previous is still running
         log.debug('Could not start photobooth thread, mutex busy')
 
 

@@ -17,10 +17,10 @@ from PIL import Image
 import gphoto2 as gp
 
 
-def open_camera() -> gp.Camera | None:
+def open_camera() -> gp.Camera:
     """
     Connect to a camera via gphoto2 and return the Camera object.
-    Return None of no camera was available.
+    Return None if no camera was available.
     """
     try:
         camera = gp.Camera()
@@ -197,6 +197,7 @@ def create_image(
     result_image_path = os.path.join(outdir, filename)
     image.save(result_image_path)
     log.info('Saved image montage in %s', result_image_path)
+    return result_image_path
 
 
 def main():

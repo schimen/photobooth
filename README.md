@@ -11,6 +11,33 @@ The concept of the project is a dslr camera connected to a respberry pi which ca
 
 I use a Canon dslr that I can connect to a Raspberry Pi via Python bindings for [gphoto2](http://gphoto.org/). The Python program running on the Raspberry Pi is [raspi_photobooth.py](./raspi_photobooth.py), which relies on [photobooth.py](./photobooth.py). The rasbperry pi connects to a [HP sprocket plus](https://www.hp.com/us-en/shop/pdp/hp-sprocket-plus-printer-p-2fr86a-b1h-1) mini printer over bluetooth. Images are transferred to the printer using [obexftp](http://dev.zuckschwerdt.org/openobex/wiki/ObexFtp), as described in [this blog](https://anotherpiblog.blogspot.com/2017/06/raspberry-pi-photobooth-with-bluetooth.html).
 
+I created a systemd service for the photobooth, so that it starts when the raspberry pi turns on.
+<details><summary><b>Here is how to implement the systemd service</b></summary>
+
+I added the systemd service by adding a file in path `/etc/systemd/system/photobooth.service` with the following content:
+```
+[Unit]
+Description=Photobooth service
+
+[Service]
+User=simen
+ExecStart=python3 /home/simen/photobooth/raspi_photobooth.py
+WorkingDirectory=/home/simen/photobooth
+
+[Install]
+WantedBy=multi-user.target
+```
+
+After adding this file, run the following commands:
+```
+sudo systemctl daemon-reload
+sudo systemctl start photobooth.service
+sudo systemctl enable photobooth.service
+```
+and use the command `systemctl status photobooth.service` to see log output from the program.
+
+</details>
+
 ### Requirements
 
 **Python**
